@@ -1,0 +1,258 @@
+-- Insert this script into a LocalScript inside StarterPlayerScripts or StarterGui
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main ScreenGui Container
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SimulatorGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = PlayerGui
+
+-- Helper function to apply exact UI styling
+local function styleCorner(parent, radius)
+	local uiCorner = Instance.new("UICorner")
+	uiCorner.CornerRadius = UDim.new(0, radius or 8)
+	uiCorner.Parent = parent
+	return uiCorner
+end
+
+local function styleStroke(parent, color, thickness)
+	local uiStroke = Instance.new("UIStroke")
+	uiStroke.Color = color or Color3.fromRGB(0, 0, 0)
+	uiStroke.Thickness = thickness or 2
+	uiStroke.Parent = parent
+	return uiStroke
+end
+
+-- ==========================================
+-- 1. TOP PROGRESS BAR (Numbers 1 to 5)
+-- ==========================================
+local TopBarFrame = Instance.new("Frame")
+TopBarFrame.Name = "TopBar"
+TopBarFrame.Size = UDim2.new(0, 500, 0, 45)
+TopBarFrame.Position = UDim2.new(0.5, -250, 0, 20)
+TopBarFrame.BackgroundColor3 = Color3.fromRGB(50, 180, 75) -- Distinct green tracker background
+TopBarFrame.BackgroundTransparency = 0.2
+TopBarFrame.Parent = ScreenGui
+styleCorner(TopBarFrame, 6)
+styleStroke(TopBarFrame, Color3.fromRGB(30, 100, 40), 2)
+
+local TopListLayout = Instance.new("UIListLayout")
+TopListLayout.FillDirection = Enum.FillDirection.Horizontal
+TopListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TopListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+TopListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TopListLayout.Padding = UDim.new(0, 40)
+TopListLayout.Parent = TopBarFrame
+
+for i = 1, 5 do
+	local NumLabel = Instance.new("TextLabel")
+	NumLabel.Name = "Stage_" .. i
+	NumLabel.Size = UDim2.new(0, 30, 0, 30)
+	NumLabel.BackgroundTransparency = 1
+	NumLabel.Text = tostring(i)
+	NumLabel.TextColor3 = Color3.fromRGB(150, 255, 150) -- Bright light neon green font color
+	NumLabel.Font = Enum.Font.FredokaOne
+	NumLabel.TextSize = 26
+	NumLabel.LayoutOrder = i
+	NumLabel.Parent = TopBarFrame
+	styleStroke(NumLabel, Color3.fromRGB(20, 60, 25), 3)
+end
+
+-- ==========================================
+-- 2. LEFT SIDEBAR STATS & BUTTONS
+-- ==========================================
+local LeftContainer = Instance.new("Frame")
+LeftContainer.Name = "LeftContainer"
+LeftContainer.Size = UDim2.new(0, 220, 0, 400)
+LeftContainer.Position = UDim2.new(0, 25, 0.5, -200)
+LeftContainer.BackgroundTransparency = 1
+LeftContainer.Parent = ScreenGui
+
+local LeftListLayout = Instance.new("UIListLayout")
+LeftListLayout.FillDirection = Enum.FillDirection.Vertical
+LeftListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+LeftListLayout.Padding = UDim.new(0, 12)
+LeftListLayout.Parent = LeftContainer
+
+-- LEVEL ACCENT CHIP
+local LevelChip = Instance.new("TextLabel")
+LevelChip.Name = "LevelChip"
+LevelChip.Size = UDim2.new(0, 140, 0, 35)
+LevelChip.BackgroundColor3 = Color3.fromRGB(110, 145, 125) -- Muted green tone
+LevelChip.Text = "Level 1"
+LevelChip.TextColor3 = Color3.fromRGB(255, 255, 255)
+LevelChip.Font = Enum.Font.FredokaOne
+LevelChip.TextSize = 18
+LevelChip.LayoutOrder = 1
+LevelChip.Parent = LeftContainer
+styleCorner(LevelChip, 6)
+styleStroke(LevelChip, Color3.fromRGB(0, 0, 0), 2)
+
+-- DIAMOND STAT BAR
+local DiamondBar = Instance.new("Frame")
+DiamondBar.Name = "DiamondBar"
+DiamondBar.Size = UDim2.new(0, 165, 0, 45)
+DiamondBar.BackgroundColor3 = Color3.fromRGB(15, 80, 145) -- Dark blue container
+DiamondBar.LayoutOrder = 2
+DiamondBar.Parent = LeftContainer
+styleCorner(DiamondBar, 8)
+styleStroke(DiamondBar, Color3.fromRGB(0, 0, 0), 2.5)
+
+local DiamondIcon = Instance.new("ImageLabel")
+DiamondIcon.Size = UDim2.new(0, 32, 0, 32)
+DiamondIcon.Position = UDim2.new(0, 8, 0.5, -16)
+DiamondIcon.BackgroundTransparency = 1
+DiamondIcon.Image = "rbxassetid://123456789" -- Swap with your custom asset diamond ID
+DiamondIcon.ImageColor3 = Color3.fromRGB(80, 210, 255) -- Cyan gem color pop
+DiamondIcon.Parent = DiamondBar
+
+local DiamondText = Instance.new("TextLabel")
+DiamondText.Size = UDim2.new(1, -55, 1, 0)
+DiamondText.Position = UDim2.new(0, 48, 0, 0)
+DiamondText.BackgroundTransparency = 1
+DiamondText.Text = "0"
+DiamondText.TextColor3 = Color3.fromRGB(255, 255, 255)
+DiamondText.Font = Enum.Font.FredokaOne
+DiamondText.TextSize = 22
+DiamondText.TextXAlignment = Enum.TextXAlignment.Left
+DiamondText.Parent = DiamondBar
+styleStroke(DiamondText, Color3.fromRGB(0, 0, 0), 2)
+
+-- RED STRENGTH STAT BAR
+local RedBar = Instance.new("Frame")
+RedBar.Name = "StrengthBar"
+RedBar.Size = UDim2.new(0, 165, 0, 45)
+RedBar.BackgroundColor3 = Color3.fromRGB(155, 35, 30) -- Dark red crimson container
+RedBar.LayoutOrder = 3
+RedBar.Parent = LeftContainer
+styleCorner(RedBar, 8)
+styleStroke(RedBar, Color3.fromRGB(0, 0, 0), 2.5)
+
+local RedIcon = Instance.new("ImageLabel")
+RedIcon.Size = UDim2.new(0, 30, 0, 30)
+RedIcon.Position = UDim2.new(0, 10, 0.5, -15)
+RedIcon.BackgroundTransparency = 1
+RedIcon.Image = "rbxassetid://123456789" -- Swap with your punching glove / ticket asset ID
+RedIcon.Parent = RedBar
+
+local RedText = Instance.new("TextLabel")
+RedText.Size = UDim2.new(1, -55, 1, 0)
+RedText.Position = UDim2.new(0, 48, 0, 0)
+RedText.BackgroundTransparency = 1
+RedText.Text = "6"
+RedText.TextColor3 = Color3.fromRGB(255, 255, 255)
+RedText.Font = Enum.Font.FredokaOne
+RedText.TextSize = 22
+RedText.TextXAlignment = Enum.TextXAlignment.Left
+RedText.Parent = RedBar
+styleStroke(RedText, Color3.fromRGB(0, 0, 0), 2)
+
+-- MENU BUTTONS ROW (Pets, Rebirth, Packs)
+local MenuRow = Instance.new("Frame")
+MenuRow.Name = "MenuRow"
+MenuRow.Size = UDim2.new(0, 220, 0, 85)
+MenuRow.BackgroundTransparency = 1
+MenuRow.LayoutOrder = 4
+MenuRow.Parent = LeftContainer
+
+local RowLayout = Instance.new("UIListLayout")
+RowLayout.FillDirection = Enum.FillDirection.Horizontal
+RowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+RowLayout.Padding = UDim.new(0, 10)
+RowLayout.Parent = MenuRow
+
+-- Blue Pets Square
+local PetsBtn = Instance.new("ImageButton")
+PetsBtn.Name = "PetsBtn"
+PetsBtn.Size = UDim2.new(0, 75, 0, 75)
+PetsBtn.BackgroundColor3 = Color3.fromRGB(30, 110, 210)
+PetsBtn.LayoutOrder = 1
+PetsBtn.Parent = MenuRow
+styleCorner(PetsBtn, 12)
+styleStroke(PetsBtn, Color3.fromRGB(0, 0, 0), 3)
+
+local PetsText = Instance.new("TextLabel")
+PetsText.Size = UDim2.new(1, 0, 0, 25)
+PetsText.Position = UDim2.new(0, 0, 1, -25)
+PetsText.BackgroundTransparency = 1
+PetsText.Text = "Pets"
+PetsText.TextColor3 = Color3.fromRGB(255, 255, 255)
+PetsText.Font = Enum.Font.FredokaOne
+PetsText.TextSize = 15
+PetsText.Parent = PetsBtn
+styleStroke(PetsText, Color3.fromRGB(0, 0, 0), 2)
+
+-- Purple Rebirth Square
+local RebirthBtn = Instance.new("ImageButton")
+RebirthBtn.Name = "RebirthBtn"
+RebirthBtn.Size = UDim2.new(0, 75, 0, 75)
+RebirthBtn.BackgroundColor3 = Color3.fromRGB(115, 30, 115)
+RebirthBtn.LayoutOrder = 2
+RebirthBtn.Parent = MenuRow
+styleCorner(RebirthBtn, 12)
+styleStroke(RebirthBtn, Color3.fromRGB(0, 0, 0), 3)
+
+local RebirthLabel = Instance.new("TextLabel")
+RebirthLabel.Size = UDim2.new(1, 0, 1, -20)
+RebirthLabel.BackgroundTransparency = 1
+RebirthLabel.Text = "C" -- Distinct stylized logo placeholder
+RebirthLabel.TextColor3 = Color3.fromRGB(240, 80, 240)
+RebirthLabel.Font = Enum.Font.FredokaOne
+RebirthLabel.TextSize = 48
+RebirthLabel.Parent = RebirthBtn
+styleStroke(RebirthLabel, Color3.fromRGB(0, 0, 0), 3)
+
+local RebirthText = Instance.new("TextLabel")
+RebirthText.Size = UDim2.new(1, 0, 0, 25)
+RebirthText.Position = UDim2.new(0, 0, 1, -25)
+RebirthText.BackgroundTransparency = 1
+RebirthText.Text = "Rebirth"
+RebirthText.TextColor3 = Color3.fromRGB(255, 255, 255)
+RebirthText.Font = Enum.Font.FredokaOne
+RebirthText.TextSize = 14
+RebirthText.Parent = RebirthBtn
+styleStroke(RebirthText, Color3.fromRGB(0, 0, 0), 2)
+
+-- Yellow Packs Square
+local PacksBtn = Instance.new("ImageButton")
+PacksBtn.Name = "PacksBtn"
+PacksBtn.Size = UDim2.new(0, 75, 0, 75)
+PacksBtn.BackgroundColor3 = Color3.fromRGB(210, 160, 20)
+PacksBtn.LayoutOrder = 3
+PacksBtn.Parent = LeftContainer -- Continues cascading on list layout below row
+styleCorner(PacksBtn, 12)
+styleStroke(PacksBtn, Color3.fromRGB(0, 0, 0), 3)
+
+local PacksText = Instance.new("TextLabel")
+PacksText.Size = UDim2.new(1, 0, 0, 25)
+PacksText.Position = UDim2.new(0, 0, 1, -25)
+PacksText.BackgroundTransparency = 1
+PacksText.Text = "Packs"
+PacksText.TextColor3 = Color3.fromRGB(255, 255, 255)
+PacksText.Font = Enum.Font.FredokaOne
+PacksText.TextSize = 15
+PacksText.Parent = PacksBtn
+styleStroke(PacksText, Color3.fromRGB(0, 0, 0), 2)
+
+
+-- ==========================================
+-- 3. BOTTOM CENTRAL INTERACTION BUTTON
+-- ==========================================
+local CentralTreadmillBtn = Instance.new("ImageButton")
+CentralTreadmillBtn.Name = "TreadmillActionBtn"
+CentralTreadmillBtn.Size = UDim2.new(0, 85, 0, 85)
+CentralTreadmillBtn.Position = UDim2.new(0.5, -42, 1, -120)
+CentralTreadmillBtn.BackgroundColor3 = Color3.fromRGB(210, 215, 220) -- Subtle metallic grey circle
+CentralTreadmillBtn.Parent = ScreenGui
+styleCorner(CentralTreadmillBtn, 45) -- Fully round circular shape
+styleStroke(CentralTreadmillBtn, Color3.fromRGB(60, 65, 70), 3)
+
+local ActionIcon = Instance.new("ImageLabel")
+ActionIcon.Size = UDim2.new(0, 50, 0, 50)
+ActionIcon.Position = UDim2.new(0.5, -25, 0.5, -25)
+ActionIcon.BackgroundTransparency = 1
+ActionIcon.Image = "rbxassetid://123456789" -- Replace with your treadmill illustration ID
+ActionIcon.Parent = CentralTreadmillBtn
