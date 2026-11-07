@@ -1,0 +1,147 @@
+-- LocalScript inside StarterGui
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local ChewEvent = ReplicatedStorage:WaitForChild("ChewEvent")
+local BuyGumEvent = ReplicatedStorage:WaitForChild("BuyGumEvent")
+local RebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent")
+local AdminCommandEvent = ReplicatedStorage:WaitForChild("AdminCommandEvent")
+local HatchEggEvent = ReplicatedStorage:WaitForChild("HatchEggEvent")
+local CatalogFolder = ReplicatedStorage:WaitForChild("GumCatalog")
+local EggCatalog = ReplicatedStorage:WaitForChild("EggCatalog")
+
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "HyperMasterHUD"
+ScreenGui.ResetOnSpawn = false
+
+-- UI Styling Engines
+local function neonStroke(parent, color, thickness)
+	local s = Instance.new("UIStroke", parent)
+	s.Color = color or Color3.fromRGB(0, 255, 200); s.Thickness = thickness or 2.5; s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+end
+local function round(parent, r) Instance.new("UICorner", parent).CornerRadius = UDim.new(0, r or 14) end
+local function applyGrad(parent, kp)
+	local g = Instance.new("UIGradient", parent); g.Color = ColorSequence.new(kp); g.Rotation = 45
+end
+
+-- ==========================================
+-- HUD OVERLAYS & UI DRAWING
+-- ==========================================
+local TopFrame = Instance.new("Frame", ScreenGui)
+TopFrame.Size = UDim2.new(0, 440, 0, 40); TopFrame.Position = UDim2.new(0.5, -220, 0, 20); TopFrame.BackgroundColor3 = Color3.fromRGB(12, 11, 18)
+round(TopFrame, 10); neonStroke(TopFrame, Color3.fromRGB(255, 0, 130), 2.5)
+
+local ProgressBar = Instance.new("Frame", TopFrame)
+ProgressBar.Size = UDim2.new(0.05, 0, 1, 0); ProgressBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+round(ProgressBar, 10); applyGrad(ProgressBar, {ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 128)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 0))})
+
+local ProgressText = Instance.new("TextLabel", TopFrame)
+ProgressText.Size = UDim2.new(1, 0, 1, 0); ProgressText.BackgroundTransparency = 1; ProgressText.Font = Enum.Font.FredokaOne; ProgressText.TextColor3 = Color3.fromRGB(255, 255, 255); ProgressText.TextSize = 14
+
+local function triggerPopup(text, color)
+	local pop = Instance.new("TextLabel", ScreenGui)
+	pop.Size = UDim2.new(0, 250, 0, 60); pop.Position = UDim2.new(0.5, math.random(-120, 40), 0.35, math.random(-40, 40)); pop.BackgroundTransparency = 1
+	pop.Text = text; pop.Font = Enum.Font.FredokaOne; pop.TextSize = 36; pop.TextColor3 = color or Color3.fromRGB(0, 255, 255)
+	Instance.new("UIStroke", pop).Thickness = 4
+	TweenService:Create(pop, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = pop.Position - UDim2.new(0, 0, 0, 90), TextSize = 46}):Play()
+	task.delay(0.38, function() pop:Destroy() end)
+end
+
+local SideContainer = Instance.new("Frame", ScreenGui)
+SideContainer.Size = UDim2.new(0, 400, 0, 90); SideContainer.Position = UDim2.new(0, 25, 0.5, -45); SideContainer.BackgroundTransparency = 1
+Instance.new("UIListLayout", SideContainer).FillDirection = Enum.FillDirection.Horizontal
+
+local function buildHudBtn(text, startColor, endColor)
+	local btn = Instance.new("TextButton", SideContainer)
+	btn.Size = UDim2.new(0, 85, 0, 85); btn.Text = text; btn.Font = Enum.Font.FredokaOne; btn.TextColor3 = Color3.fromRGB(255, 255, 255); btn.TextSize = 14
+	round(btn, 16); neonStroke(btn, startColor, 3); applyGrad(btn, {ColorSequenceKeypoint.new(0, startColor), ColorSequenceKeypoint.new(1, endColor)})
+	return btn
+end
+
+local ShopToggle = buildHudBtn("SHOP", Color3.fromRGB(0, 255, 255), Color3.fromRGB(0, 80, 220))
+local RebirthToggle = buildHudBtn("REBIRTH", Color3.fromRGB(180, 50, 255), Color3.fromRGB(90, 10, 180))
+local EggToggle = buildHudBtn("EGGS", Color3.fromRGB(255, 180, 0), Color3.fromRGB(200, 80, 0))
+
+local function createMasterPanel(title, strokeColor)
+	local p = Instance.new("Frame", ScreenGui)
+	p.Size = UDim2.new(0, 360, 0, 400); p.Position = UDim2.new(0.5, -180, 0.5, -200); p.BackgroundColor3 = Color3.fromRGB(12, 11, 16); p.Visible = false
+	round(p, 20); neonStroke(p, strokeColor, 3)
+	local h = Instance.new("TextLabel", p); h.Size = UDim2.new(1, 0, 0, 50); h.Text = title; h.Font = Enum.Font.FredokaOne; h.TextColor3 = strokeColor; h.TextSize = 22; h.BackgroundTransparency = 1
+	local s = Instance.new("ScrollingFrame", p); s.Size = UDim2.new(1, -24, 1, -70); s.Position = UDim2.new(0, 12, 0, 55); s.BackgroundTransparency = 1; s.ScrollBarThickness = 5; s.ScrollBarImageColor3 = strokeColor
+	Instance.new("UIListLayout", s).Padding = UDim.new(0, 10)
+	return p, s
+end
+
+-- Render Shop Rows
+local ShopPanel, ShopScroll = createMasterPanel("NEON GUM VAULT", Color3.fromRGB(0, 255, 200))
+ShopToggle.MouseButton1Click:Connect(function() ShopPanel.Visible = not ShopPanel.Visible end)
+local items = CatalogFolder:GetChildren()
+table.sort(items, function(a,b) return a.Cost.Value < b.Cost.Value end)
+for _, f in ipairs(items) do
+	local r = Instance.new("Frame", ShopScroll); r.Size = UDim2.new(1, -8, 0, 55); r.BackgroundColor3 = Color3.fromRGB(22, 23, 32); round(r, 10); neonStroke(r, Color3.fromRGB(45,48,65), 1.5)
+	local ic = Instance.new("Frame", r); ic.Size = UDim2.new(0, 35, 0, 35); ic.Position = UDim2.new(0, 10, 0.5, -17.5); ic.BackgroundColor3 = f.Color.Value; round(ic, 8)
+	local lbl = Instance.new("TextLabel", r); lbl.Size = UDim2.new(0.5, 0, 1, 0); lbl.Position = UDim2.new(0, 55, 0, 0); lbl.BackgroundTransparency = 1; lbl.Text = "<b>" .. f.Name .. "</b>\nCost: " .. f.Cost.Value; lbl.RichText = true; lbl.Font = Enum.Font.FredokaOne; lbl.TextColor3 = Color3.fromRGB(255,255,255); lbl.TextSize = 12; lbl.TextXAlignment = Enum.TextXAlignment.Left
+	local b = Instance.new("TextButton", r); b.Size = UDim2.new(0.26, 0, 0.65, 0); b.Position = UDim2.new(0.7, 0, 0.175, 0); b.Text = "BUY"; b.Font = Enum.Font.FredokaOne; b.TextColor3 = Color3.fromRGB(255,255,255); b.BackgroundColor3 = Color3.fromRGB(0, 190, 110); round(b, 8)
+	b.MouseButton1Click:Connect(function() if BuyGumEvent:InvokeServer(f.Name) then b.Text = "EQ"; b.BackgroundColor3 = Color3.fromRGB(70,75,85) else b.Text = "POOR" end end)
+end
+
+-- Render Eggs Rows
+local EggPanel, EggScroll = createMasterPanel("PET EGGS", Color3.fromRGB(255, 180, 0))
+EggToggle.MouseButton1Click:Connect(function() EggPanel.Visible = not EggPanel.Visible end)
+for _, e in ipairs(EggCatalog:GetChildren()) do
+	local r = Instance.new("Frame", EggScroll); r.Size = UDim2.new(1, -8, 0, 65); r.BackgroundColor3 = Color3.fromRGB(26, 24, 20); round(r, 12); neonStroke(r, Color3.fromRGB(70,60,40), 1.5)
+	local lbl = Instance.new("TextLabel", r); lbl.Size = UDim2.new(0.6, 0, 1, 0); lbl.Position = UDim2.new(0, 15, 0, 0); lbl.BackgroundTransparency = 1; lbl.Text = "<b>" .. e.Name .. "</b>\nPrice: " .. e.Cost.Value; lbl.RichText = true; lbl.Font = Enum.Font.FredokaOne; lbl.TextColor3 = Color3.fromRGB(255,255,255); lbl.TextSize = 13; lbl.TextXAlignment = Enum.TextXAlignment.Left
+	local b = Instance.new("TextButton", r); b.Size = UDim2.new(0.28, 0, 0.6, 0); b.Position = UDim2.new(0.68, 0, 0.2, 0); b.Text = "HATCH"; b.Font = Enum.Font.FredokaOne; b.TextColor3 = Color3.fromRGB(255,255,255); b.BackgroundColor3 = Color3.fromRGB(240, 130, 0); round(b, 10)
+	b.MouseButton1Click:Connect(function() local res = HatchEggEvent:InvokeServer(e.Name) if res then triggerPopup("HATCHED: " .. res, Color3.fromRGB(255, 215, 0)) end end)
+end
+
+-- Render Admin Rows Safely
+local AdminPanel, AdminScroll = createMasterPanel("ADMIN CONTROLS", Color3.fromRGB(255, 50, 50))
+local function buildAdminCmdRow(text, cmdToken)
+	local b = Instance.new("TextButton", AdminScroll)
+	b.Size = UDim2.new(1, -8, 0, 50); b.Text = text; b.Font = Enum.Font.FredokaOne; b.TextColor3 = Color3.fromRGB(255,255,255); b.BackgroundColor3 = Color3.fromRGB(40, 15, 15); round(b, 10); neonStroke(b, Color3.fromRGB(255,50,50), 1.5)
+	b.MouseButton1Click:Connect(function() AdminCommandEvent:FireServer(cmdToken) end)
+end
+buildAdminCmdRow("Toggle Cash Rain", "ToggleCashRain")
+buildAdminCmdRow("Add +50k Coins", "GiveCoins")
+task.spawn(function() local isA = LocalPlayer:WaitForChild("IsAdmin", 5) if isA then linkPanelToggle(buildHudBtn("ADMIN", Color3.fromRGB(255, 50, 50), Color3.fromRGB(140, 10, 10)), AdminPanel) end end)
+
+-- ==========================================
+-- 🐾 COMPLETELY FILTERINGENABLED (FE) LOCAL PET ENGINE
+-- ==========================================
+local activeClientPets = {}
+
+local function clearLocalPet(player)
+	if activeClientPets[player] then
+		if activeClientPets[player].Model then activeClientPets[player].Model:Destroy() end
+		activeClientPets[player] = nil
+	end
+end
+
+local function spawnLocalPetPart(player, petConfig)
+	clearLocalPet(player)
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+	
+	-- Build a local visual cube representing the pet completely client-side
+	local petModel = Instance.new("Part")
+	petModel.Name = "FE_ClientPet_" .. player.Name
+	petModel.Size = Vector3.new(1.4, 1.4, 1.4)
+	petModel.Color = petConfig.Color.Value
+	petModel.Material = Enum.Material.Neon
+	petModel.CanCollide = false
+	petModel.Anchored = true
+	petModel.Parent = workspace
+	
+	-- Draw floating face billboard text decoration overlay safely onto container
+	local bb = Instance.new("BillboardGui", petModel)
+	bb.Size = UDim2.new(0, 100, 0, 30); bb.AlwaysOnTop = true; bb.StudsOffset = Vector3.new(0, 1.2, 0)
+	local tl = Instance.new("TextLabel", bb)
+	tl.Size = UDim2.new(1, 0, 1, 0); tl.BackgroundTransparency = 1; tl.Text = petConfig.PetName.Value; tl.Font = Enum.Font.FredokaOne; tl.TextColor3 = Color3.fromRGB(255,255,255); tl.TextSize = 14
+	neonStroke(tl, Color3.fromRGB(0,0,0), 2)
+
