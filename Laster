@@ -1,0 +1,158 @@
+-- LocalScript inside StarterGui
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local ChewEvent = ReplicatedStorage:WaitForChild("ChewEvent")
+local BuyGumEvent = ReplicatedStorage:WaitForChild("BuyGumEvent")
+local RebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent")
+local AdminCommandEvent = ReplicatedStorage:WaitForChild("AdminCommandEvent")
+local HatchEggEvent = ReplicatedStorage:WaitForChild("HatchEggEvent")
+local CatalogFolder = ReplicatedStorage:WaitForChild("GumCatalog")
+local EggCatalog = ReplicatedStorage:WaitForChild("EggCatalog")
+
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "HyperMasterHUD"
+ScreenGui.ResetOnSpawn = false
+
+-- Styling Helpers
+local function neonStroke(parent, color, thickness)
+	local s = Instance.new("UIStroke", parent)
+	s.Color = color or Color3.fromRGB(0, 255, 200); s.Thickness = thickness or 2.5; s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+end
+local function round(parent, r) Instance.new("UICorner", parent).CornerRadius = UDim.new(0, r or 14) end
+local function applyGrad(parent, kp)
+	local g = Instance.new("UIGradient", parent); g.Color = ColorSequence.new(kp); g.Rotation = 45
+end
+
+-- ==========================================
+-- HUD PROGRESS TRACKER TOP PANEL
+-- ==========================================
+local TopFrame = Instance.new("Frame", ScreenGui)
+TopFrame.Size = UDim2.new(0, 440, 0, 40); TopFrame.Position = UDim2.new(0.5, -220, 0, 20); TopFrame.BackgroundColor3 = Color3.fromRGB(12, 11, 18)
+round(TopFrame, 10); neonStroke(TopFrame, Color3.fromRGB(255, 0, 130), 2.5)
+
+local ProgressBar = Instance.new("Frame", TopFrame)
+ProgressBar.Size = UDim2.new(0.05, 0, 1, 0); ProgressBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+round(ProgressBar, 10); applyGrad(ProgressBar, {ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 128)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 0))})
+
+local ProgressText = Instance.new("TextLabel", TopFrame)
+ProgressText.Size = UDim2.new(1, 0, 1, 0); ProgressText.BackgroundTransparency = 1; ProgressText.Font = Enum.Font.FredokaOne; ProgressText.TextColor3 = Color3.fromRGB(255, 255, 255); ProgressText.TextSize = 14
+
+-- Floating Popup Effect Engine
+local function triggerPopup(text, color)
+	local pop = Instance.new("TextLabel", ScreenGui)
+	pop.Size = UDim2.new(0, 250, 0, 60); pop.Position = UDim2.new(0.5, math.random(-120, 40), 0.35, math.random(-40, 40)); pop.BackgroundTransparency = 1
+	pop.Text = text; pop.Font = Enum.Font.FredokaOne; pop.TextSize = 36; pop.TextColor3 = color or Color3.fromRGB(0, 255, 255)
+	Instance.new("UIStroke", pop).Thickness = 4
+	TweenService:Create(pop, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = pop.Position - UDim2.new(0, 0, 0, 90), TextSize = 46}):Play()
+	task.delay(0.38, function() pop:Destroy() end)
+end
+
+-- ==========================================
+-- CORE INTERACTIVE ACTION CONTROL BAR
+-- ==========================================
+local SideContainer = Instance.new("Frame", ScreenGui)
+SideContainer.Size = UDim2.new(0, 400, 0, 90); SideContainer.Position = UDim2.new(0, 25, 0.5, -45); SideContainer.BackgroundTransparency = 1
+local SideLayout = Instance.new("UIListLayout", SideContainer); SideLayout.FillDirection = Enum.FillDirection.Horizontal; SideLayout.Padding = UDim.new(0, 12)
+
+local function buildHudBtn(text, startColor, endColor)
+	local btn = Instance.new("TextButton", SideContainer)
+	btn.Size = UDim2.new(0, 85, 0, 85); btn.Text = text; btn.Font = Enum.Font.FredokaOne; btn.TextColor3 = Color3.fromRGB(255, 255, 255); btn.TextSize = 14
+	round(btn, 16); neonStroke(btn, startColor, 3); applyGrad(btn, {ColorSequenceKeypoint.new(0, startColor), ColorSequenceKeypoint.new(1, endColor)})
+	return btn
+end
+
+local ShopToggle = buildHudBtn("SHOP", Color3.fromRGB(0, 255, 255), Color3.fromRGB(0, 80, 220))
+local RebirthToggle = buildHudBtn("REBIRTH", Color3.fromRGB(180, 50, 255), Color3.fromRGB(90, 10, 180))
+local EggToggle = buildHudBtn("EGGS", Color3.fromRGB(255, 180, 0), Color3.fromRGB(200, 80, 0))
+
+-- Hide/Reveal Panel Logic Handler
+local function linkPanelToggle(button, frame)
+	button.MouseButton1Click:Connect(function() frame.Visible = not frame.Visible end)
+end
+
+-- Base Frame Panel Factory Blueprint
+local function createMasterPanel(title, strokeColor)
+	local p = Instance.new("Frame", ScreenGui)
+	p.Size = UDim2.new(0, 360, 0, 400); p.Position = UDim2.new(0.5, -180, 0.5, -200); p.BackgroundColor3 = Color3.fromRGB(12, 11, 16); p.Visible = false
+	round(p, 20); neonStroke(p, strokeColor, 3)
+	local h = Instance.new("TextLabel", p); h.Size = UDim2.new(1, 0, 0, 50); h.Text = title; h.Font = Enum.Font.FredokaOne; h.TextColor3 = strokeColor; h.TextSize = 22; h.BackgroundTransparency = 1
+	local s = Instance.new("ScrollingFrame", p); s.Size = UDim2.new(1, -24, 1, -70); s.Position = UDim2.new(0, 12, 0, 55); s.BackgroundTransparency = 1; s.ScrollBarThickness = 5; s.ScrollBarImageColor3 = strokeColor
+	Instance.new("UIListLayout", s).Padding = UDim.new(0, 10)
+	return p, s
+end
+
+-- ==========================================
+-- RENDERING SYSTEM: 100 GUM VARIATIONS SHOP
+-- ==========================================
+local ShopPanel, ShopScroll = createMasterPanel("NEON GUM VAULT", Color3.fromRGB(0, 255, 200))
+linkPanelToggle(ShopToggle, ShopPanel)
+
+local items = CatalogFolder:GetChildren()
+table.sort(items, function(a,b) return a.Cost.Value < b.Cost.Value end)
+
+for _, f in ipairs(items) do
+	local r = Instance.new("Frame", ShopScroll); r.Size = UDim2.new(1, -8, 0, 55); r.BackgroundColor3 = Color3.fromRGB(22, 23, 32); round(r, 10); neonStroke(r, Color3.fromRGB(45,48,65), 1.5)
+	local ic = Instance.new("Frame", r); ic.Size = UDim2.new(0, 35, 0, 35); ic.Position = UDim2.new(0, 10, 0.5, -17.5); ic.BackgroundColor3 = f.Color.Value; round(ic, 8)
+	local lbl = Instance.new("TextLabel", r); lbl.Size = UDim2.new(0.5, 0, 1, 0); lbl.Position = UDim2.new(0, 55, 0, 0); lbl.BackgroundTransparency = 1; lbl.Text = "<b>" .. f.Name .. "</b>\nCost: " .. f.Cost.Value; lbl.RichText = true; lbl.Font = Enum.Font.FredokaOne; lbl.TextColor3 = Color3.fromRGB(255,255,255); lbl.TextSize = 12; lbl.TextXAlignment = Enum.TextXAlignment.Left
+	local b = Instance.new("TextButton", r); b.Size = UDim2.new(0.26, 0, 0.65, 0); b.Position = UDim2.new(0.7, 0, 0.175, 0); b.Text = "BUY"; b.Font = Enum.Font.FredokaOne; b.TextColor3 = Color3.fromRGB(255,255,255); b.BackgroundColor3 = Color3.fromRGB(0, 190, 110); round(b, 8)
+	b.MouseButton1Click:Connect(function()
+		if BuyGumEvent:InvokeServer(f.Name) then b.Text = "EQUIPPED"; b.BackgroundColor3 = Color3.fromRGB(70,75,85) else b.Text = "POOR!" end
+	end)
+end
+ShopScroll.CanvasSize = UDim2.new(0,0,0, #items * 65)
+
+-- ==========================================
+-- RENDERING SYSTEM: PET EGG UNBOXING STATION
+-- ==========================================
+local EggPanel, EggScroll = createMasterPanel("PET EGG hatchery", Color3.fromRGB(255, 180, 0))
+linkPanelToggle(EggToggle, EggPanel)
+
+for _, e in ipairs(EggCatalog:GetChildren()) do
+	local r = Instance.new("Frame", EggScroll); r.Size = UDim2.new(1, -8, 0, 65); r.BackgroundColor3 = Color3.fromRGB(26, 24, 20); round(r, 12); neonStroke(r, Color3.fromRGB(70,60,40), 1.5)
+	local lbl = Instance.new("TextLabel", r); lbl.Size = UDim2.new(0.6, 0, 1, 0); lbl.Position = UDim2.new(0, 15, 0, 0); lbl.BackgroundTransparency = 1; lbl.Text = "<b>" .. e.Name .. "</b>\nPrice: " .. e.Cost.Value .. " Coins"; lbl.RichText = true; lbl.Font = Enum.Font.FredokaOne; lbl.TextColor3 = Color3.fromRGB(255,255,255); lbl.TextSize = 13; lbl.TextXAlignment = Enum.TextXAlignment.Left
+	local b = Instance.new("TextButton", r); b.Size = UDim2.new(0.28, 0, 0.6, 0); b.Position = UDim2.new(0.68, 0, 0.2, 0); b.Text = "HATCH"; b.Font = Enum.Font.FredokaOne; b.TextColor3 = Color3.fromRGB(255,255,255); b.BackgroundColor3 = Color3.fromRGB(240, 130, 0); round(b, 10)
+	b.MouseButton1Click:Connect(function()
+		b.Text = "🛒..."
+		local petHatched = HatchEggEvent:InvokeServer(e.Name)
+		if petHatched then triggerPopup("HATCHED: " .. petHatched, Color3.fromRGB(255, 215, 0)) else b.Text = "LACK FUNDS" end
+		task.wait(0.8) b.Text = "HATCH"
+	end)
+end
+EggScroll.CanvasSize = UDim2.new(0,0,0, 150)
+
+-- ==========================================
+-- RENDERING SYSTEM: SECURE MATRIX ADMIN CONTROL DASHBOARD
+-- ==========================================
+local AdminPanel, AdminScroll = createMasterPanel("ADMIN CONTROLS", Color3.fromRGB(255, 50, 50))
+
+local function buildAdminCmdRow(text, cmdToken)
+	local b = Instance.new("TextButton", AdminScroll)
+	b.Size = UDim2.new(1, -8, 0, 50); b.Text = text; b.Font = Enum.Font.FredokaOne; b.TextColor3 = Color3.fromRGB(255,255,255); b.BackgroundColor3 = Color3.fromRGB(40, 15, 15); round(b, 10); neonStroke(b, Color3.fromRGB(255,50,50), 1.5)
+	b.MouseButton1Click:Connect(function()
+		AdminCommandEvent:FireServer(cmdToken)
+		triggerPopup("COMMAND DISPATCHED!", Color3.fromRGB(255, 50, 50))
+	end)
+end
+
+buildAdminCmdRow("🌧️ Toggle Cash Rain Mod", "ToggleCashRain")
+buildAdminCmdRow("💰 Instantly Add +50k Free Coins", "GiveCoins")
+AdminScroll.CanvasSize = UDim2.new(0,0,0, 120)
+
+-- Check Server Authorization profile properties to reveal admin button safely
+task.spawn(function()
+	local isAdmin = LocalPlayer:WaitForChild("IsAdmin", 5)
+	if isAdmin and isAdmin.Value == true then
+		local AdminToggle = buildHudBtn("ADMIN", Color3.fromRGB(255, 50, 50), Color3.fromRGB(140, 10, 10))
+		linkPanelToggle(AdminToggle, AdminPanel)
+	end
+end)
+
+-- ==========================================
+-- LOOPS & CORE INPUT LIFECYCLES
+-- ==========================================
+RebirthToggle.MouseButton1Click:Connect(function()
