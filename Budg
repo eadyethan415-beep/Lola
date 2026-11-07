@@ -1,0 +1,39 @@
+-- 👇 PASTE YOUR ANIMATION ID NUMBER BETWEEN THE QUOTES BELOW 👇
+local MY_ANIMATION_ID = "1234567890" 
+local ANIMATION_SPEED = 0.5 -- 1 is normal speed. 0.5 is half-speed (slower). 2 is double speed (faster).
+
+local seat = script.Parent
+local currentTrack = nil
+
+-- This creates the animation object automatically using the ID you typed above
+local animation = Instance.new("Animation")
+animation.AnimationId = "rbxassetid://" .. string.gsub(MY_ANIMATION_ID, "%D", "")
+
+seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+	local humanoid = seat.Occupant
+	
+	if humanoid then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if animator then
+			-- Switch off default sitting stance so it doesn't conflict
+			local animateScript = humanoid.Parent:FindFirstChild("Animate")
+			if animateScript and animateScript:FindFirstChild("sit") then
+				animateScript.sit:FindFirstChildOfClass("Animation").AnimationId = animation.AnimationId
+			end
+			
+			-- Load and play your custom pose
+			currentTrack = animator:LoadAnimation(animation)
+			
+			-- 👇 THESE LINES MAKE IT LOOP AND GO SLOWER 👇
+			currentTrack.Looped = true          -- Forces the animation to loop continuously
+			currentTrack:Play()
+			currentTrack:AdjustSpeed(ANIMATION_SPEED) -- Adjusts how fast or slow the animation plays
+		end
+	else
+		-- The player stood up! Stop your custom pose smoothly
+		if currentTrack then
+			currentTrack:Stop()
+			currentTrack = nil
+		end
+	end
+end)
