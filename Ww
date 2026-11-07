@@ -1,0 +1,74 @@
+-- Copy/Paste this into the Roblox Studio Command Bar to generate the layout components permanently!
+local Selection = game:GetService("Selection")
+local StarterGui = game:GetService("StarterGui")
+
+-- 1. Create permanent screen tree branch container
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HyperMasterHUD"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = StarterGui
+
+local function round(p, r) Instance.new("UICorner", p).CornerRadius = UDim.new(0, r or 14) end
+local function stroke(p, c, t)
+	local s = Instance.new("UIStroke", p)
+	s.Color = c or Color3.fromRGB(0, 255, 200)
+	s.Thickness = t or 2.5
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+end
+
+-- 2. Build Top Progress Frame Structure
+local TopFrame = Instance.new("Frame", ScreenGui)
+TopFrame.Name = "TopProgressBar"
+TopFrame.Size = UDim2.new(0, 440, 0, 40)
+TopFrame.Position = UDim2.new(0.5, -220, 0, 20)
+TopFrame.BackgroundColor3 = Color3.fromRGB(12, 11, 18)
+round(TopFrame, 10)
+stroke(TopFrame, Color3.fromRGB(255, 0, 130), 2.5)
+
+local ProgressBar = Instance.new("Frame", TopFrame)
+ProgressBar.Name = "FillBar"
+ProgressBar.Size = UDim2.new(0.5, 0, 1, 0)
+ProgressBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+round(ProgressBar, 10)
+
+local ProgressText = Instance.new("TextLabel", TopFrame)
+ProgressText.Name = "DisplayLabel"
+ProgressText.Size = UDim2.new(1, 0, 1, 0)
+ProgressText.BackgroundTransparency = 1
+ProgressText.Font = Enum.Font.FredokaOne
+ProgressText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ProgressText.TextSize = 14
+ProgressText.Text = "Coins: 0 | Rebirth Target: 0 / 500"
+
+-- 3. Build Action Side Bar Menu Layout
+local SideContainer = Instance.new("Frame", ScreenGui)
+SideContainer.Name = "ActionBar"
+SideContainer.Size = UDim2.new(0, 400, 0, 90)
+SideContainer.Position = UDim2.new(0, 25, 0.5, -45)
+SideContainer.BackgroundTransparency = 1
+
+local layout = Instance.new("UIListLayout", SideContainer)
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.Padding = UDim.new(0, 10)
+
+local function buildButtonTemplate(name, text, col)
+	local btn = Instance.new("TextButton", SideContainer)
+	btn.Name = name .. "Btn"
+	btn.Size = UDim2.new(0, 85, 0, 85)
+	btn.Text = text
+	btn.Font = Enum.Font.FredokaOne
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextSize = 14
+	btn.BackgroundColor3 = col
+	round(btn, 16)
+	stroke(btn, Color3.fromRGB(0,0,0), 3)
+	return btn
+end
+
+buildButtonTemplate("Shop", "SHOP", Color3.fromRGB(0, 120, 220))
+buildButtonTemplate("Rebirth", "REBIRTH", Color3.fromRGB(90, 10, 180))
+buildButtonTemplate("Egg", "EGGS", Color3.fromRGB(200, 80, 0))
+buildButtonTemplate("Admin", "ADMIN", Color3.fromRGB(140, 10, 10))
+
+print("🎉 Successfully generated your physical GUI layout elements inside StarterGui!")
+Selection:Set({ScreenGui})
