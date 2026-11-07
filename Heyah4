@@ -1,0 +1,222 @@
+-- Server Script inside ServerScriptService
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+-- Security Setup: Add your exact Roblox Account Username here to unlock the panel!
+local ADMINS = {["YourRobloxUsernameHere"] = true}
+
+local function getRemote(name, className)
+	local remote = ReplicatedStorage:FindFirstChild(name)
+	if not remote then
+		remote = Instance.new(className)
+		remote.Name = name
+		remote.Parent = ReplicatedStorage
+	end
+	return remote
+end
+
+local ChewEvent = getRemote("ChewEvent", "RemoteEvent")
+local BuyGumEvent = getRemote("BuyGumEvent", "RemoteFunction")
+local RebirthEvent = getRemote("RebirthEvent", "RemoteFunction")
+local AdminCommandEvent = getRemote("AdminCommandEvent", "RemoteEvent")
+local HatchEggEvent = getRemote("HatchEggEvent", "RemoteFunction")
+
+-- 100 Tiers Database Generation Loop
+local GumUpgrades = {}
+local flavors = {"Minty", "Strawberry", "Blueberry", "Grape", "Watermelon", "Cotton Candy", "Cosmic", "Nuclear", "Void", "Nebula"}
+local colorPalettes = {Color3.fromRGB(85, 255, 255), Color3.fromRGB(255, 85, 127), Color3.fromRGB(85, 170, 255), Color3.fromRGB(170, 85, 255), Color3.fromRGB(85, 255, 127)}
+
+for i = 1, 100 do
+	local base = flavors[((i-1) % #flavors) + 1]
+	local name = "Tier " .. i .. ": " .. base .. (i <= 50 and " Chew" or " Singularity")
+	GumUpgrades[name] = {
+		Cost = math.floor(30 * math.pow(i, 2.3)),
+		Multiplier = math.floor(1 * math.pow(i, 1.8)),
+		Color = colorPalettes[((i-1) % #colorPalettes) + 1]
+	}
+end
+
+local CatalogFolder = ReplicatedStorage:FindFirstChild("GumCatalog") or Instance.new("Folder", ReplicatedStorage)
+CatalogFolder.Name = "GumCatalog"
+for name, data in pairs(GumUpgrades) do
+	if not CatalogFolder:FindFirstChild(name) then
+		local cfg = Instance.new("Configuration", CatalogFolder); cfg.Name = name
+		Instance.new("IntValue", cfg).Name = "Cost".Value = data.Cost
+		Instance.new("IntValue", cfg).Name = "Multiplier".Value = data.Multiplier
+		Instance.new("Color3Value", cfg).Name = "Color".Value = data.Color
+	end
+end
+
+-- Pet Eggs Configuration Database (Includes visual block fallback descriptions)
+local PetEggs = {
+	["Common Egg"] = {
+		Cost = 150,
+		Pool = {
+			{Name = "Cat", Weight = 60, Mult = 1.5, Color = Color3.fromRGB(255, 170, 120)},
+			{Name = "Dog", Weight = 35, Mult = 2.0, Color = Color3.fromRGB(160, 120, 90)},
+			{Name = "Dragon", Weight = 5, Mult = 5.0, Color = Color3.fromRGB(255, 50, 50)}
+		}
+	}
+}
+
+local EggCatalog = ReplicatedStorage:FindFirstChild("EggCatalog") or Instance.new("Folder", ReplicatedStorage)
+EggCatalog.Name = "EggCatalog"
+for eggName, data in pairs(PetEggs) do
+	local f = Instance.new("Folder", EggCatalog); f.Name = eggName
+	Instance.new("IntValue", f).Name = "Cost".Value = data.Cost
+end
+
+local cashRainActive = false
+
+Players.PlayerAdded:Connect(function(player)
+	local leaderstats = Instance.new("Folder", player); leaderstats.Name = "leaderstats"
+	local coins = Instance.new("IntValue", leaderstats); coins.Name = "Coins"; coins.Value = 1000 -- Free starting test cash
+	local rebirths = Instance.new("IntValue", leaderstats); rebirths.Name = "Rebirths"; rebirths.Value = 0
+
+	Instance.new("IntValue", player).Name = "Chews"
+	local currentGum = Instance.new("StringValue", player); currentGum.Name = "CurrentGum"; currentGum.Value = "Tier 1: Minty Chew"
+	Instance.new("NumberValue", player).Name = "SpeedMultiplier"; player.SpeedMultiplier.Value = 1
+	Instance.new("NumberValue", player).Name = "PetMultiplier"; player.PetMultiplier.Value = 1
+
+	-- Equipped pet pointer folder that replicates automatically to all clients under FE
+	local equippedPet = Instance.new("StringValue", player)
+	equippedPet.Name = "EquippedPet"
+	equippedPet.Value = ""
+
+	local ownedPets = Instance.new("Folder", player); ownedPets.Name = "OwnedPets"
+	
+	if ADMINS[player.Name] then
+		local isAdmin = Instance.new("BoolValue", player)
+		isAdmin.Name = "IsAdmin"
+		isAdmin.Value = true
+	end
+end)
+
+ChewEvent.OnServerEvent:Connect(function(player)
+	local character = player.Character
+	if not character then return end
+	local head = character:FindFirstChild("Head") or character:WaitForChild("Head", 4)
+	if not head then return end
+	
+	local multiplier = player.SpeedMultiplier.Value
+	local petMultiplier = player.PetMultiplier.Value
+	local rebirthMultiplier = player.leaderstats.Rebirths.Value + 1
+	
+	player.Chews.Value = player.Chews.Value + (1 * multiplier * petMultiplier * rebirthMultiplier)
+	player.leaderstats.Coins.Value = player.leaderstats.Coins.Value + (2 * multiplier * petMultiplier * rebirthMultiplier)
+
+	local existing = head:FindFirstChild("GumBubble")
+	if existing then existing:Destroy() end
+
+	local bubble = Instance.new("Part")
+	bubble.Name = "GumBubble"; bubble.Shape = Enum.PartType.Ball; bubble.Material = Enum.Material.Glass; bubble.Transparency = 0.25; bubble.CanCollide = false; bubble.Massless = true
+	bubble.Color = GumUpgrades[player.CurrentGum.Value] and GumUpgrades[player.CurrentGum.Value].Color or Color3.fromRGB(255, 170, 255)
+	bubble.Parent = head
+
+	local weld = Instance.new("Weld", bubble)
+	weld.Part0 = head; weld.Part1 = bubble; weld.C0 = CFrame.new(0, -0.35, -1.1)
+
+	local baseScale = math.clamp((player.Chews.Value * 0.03), 0.3, 3.2)
+	bubble.Size = Vector3.new(0.05, 0.05, 0.05)
+	TweenService:Create(bubble, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = Vector3.new(baseScale, baseScale, baseScale)}):Play()
+	
+	task.delay(0.32, function() if bubble and bubble.Parent then bubble:Destroy() end end)
+end)
+
+BuyGumEvent.OnServerInvoke = function(player, requestedGum)
+	local target = CatalogFolder:FindFirstChild(requestedGum)
+	if not target or player.leaderstats.Coins.Value < target.Cost.Value then return false end
+	player.leaderstats.Coins.Value = player.leaderstats.Coins.Value - target.Cost.Value
+	player.CurrentGum.Value = requestedGum
+	player.SpeedMultiplier.Value = target.Multiplier.Value
+	return true
+end
+
+RebirthEvent.OnServerInvoke = function(player)
+	local cost = (player.leaderstats.Rebirths.Value + 1) * 500
+	if player.Chews.Value < cost then return false end
+	player.Chews.Value = 0
+	player.leaderstats.Rebirths.Value = player.leaderstats.Rebirths.Value + 1
+	player.leaderstats.Coins.Value = 0
+	player.CurrentGum.Value = "Tier 1: Minty Chew"
+	player.SpeedMultiplier.Value = 1
+	return true
+end
+
+-- FE Multi-Weighted Unboxing Logic
+HatchEggEvent.OnServerInvoke = function(player, eggName)
+	local eggData = PetEggs[eggName]
+	if not eggData or player.leaderstats.Coins.Value < eggData.Cost then return nil end
+	
+	player.leaderstats.Coins.Value = player.leaderstats.Coins.Value - eggData.Cost
+	
+	local totalWeight = 0
+	for _, pet in ipairs(eggData.Pool) do totalWeight = totalWeight + pet.Weight end
+	local rolledValue = math.random(1, totalWeight)
+	
+	local chosenPet = nil
+	local currentCounter = 0
+	for _, pet in ipairs(eggData.Pool) do
+		currentCounter = currentCounter + pet.Weight
+		if rolledValue <= currentCounter then
+			chosenPet = pet
+			break
+		end
+	end
+	
+	if chosenPet then
+		-- Save configuration instance dynamically inside server storage folder tree
+		local petId = chosenPet.Name .. "_" .. math.random(1000, 9999)
+		local petConfig = Instance.new("Configuration", player.OwnedPets)
+		petConfig.Name = petId
+		
+		local pName = Instance.new("StringValue", petConfig); pName.Name = "PetName"; pName.Value = chosenPet.Name
+		local pMult = Instance.new("NumberValue", petConfig); pMult.Name = "Multiplier"; pMult.Value = chosenPet.Mult
+		local pColor = Instance.new("Color3Value", petConfig); pColor.Name = "Color"; pColor.Value = chosenPet.Color
+
+		-- Automatically Equip the new pet safely over FE architecture channels
+		player.EquippedPet.Value = petId
+		player.PetMultiplier.Value = chosenPet.Mult
+		
+		return chosenPet.Name
+	end
+	return nil
+end
+
+-- Admin Router Channels
+AdminCommandEvent.OnServerEvent:Connect(function(player, commandType)
+	if not ADMINS[player.Name] then return end
+	if commandType == "ToggleCashRain" then
+		cashRainActive = not cashRainActive
+		if cashRainActive then
+			task.spawn(function()
+				while cashRainActive do
+					task.wait(0.12)
+					for _, p in ipairs(Players:GetPlayers()) do
+						local char = p.Character
+						if char and char:FindFirstChild("HumanoidRootPart") then
+							local cashPart = Instance.new("Part")
+							cashPart.Size = Vector3.new(2, 0.2, 1)
+							cashPart.Color = Color3.fromRGB(50, 205, 50)
+							cashPart.Material = Enum.Material.SmoothPlastic
+							cashPart.Position = char.HumanoidRootPart.Position + Vector3.new(math.random(-15, 15), 25, math.random(-15, 15))
+							cashPart.Parent = workspace
+							
+							cashPart.Touched:Connect(function(hit)
+								local hitPlayer = Players:GetPlayerFromCharacter(hit.Parent)
+								if hitPlayer then
+									hitPlayer.leaderstats.Coins.Value = hitPlayer.leaderstats.Coins.Value + 100
+									cashPart:Destroy()
+								end
+							end)
+							task.delay(6, function() if cashPart and cashPart.Parent then cashPart:Destroy() end end)
+						end
+					end
+				end
+			end)
+		end
+	elseif commandType == "GiveCoins" then
+		player.leaderstats.Coins.Value = player.leaderstats.Coins.Value + 50000
+	end
+end)
