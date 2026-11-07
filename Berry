@@ -1,0 +1,123 @@
+-- Roblox Obby GUI Recreation Script
+-- Place this code inside a LocalScript under StarterGui
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local mainGui = Instance.new("ScreenGui")
+mainGui.Name = "ObbyGui"
+mainGui.ResetOnSpawn = false
+mainGui.Parent = playerGui
+
+---------------------------------------------------------
+-- HELPER FUNCTIONS FOR SEAMLESS STYLING
+---------------------------------------------------------
+local function createButton(name, size, position, bgColor, parent)
+	local button = Instance.new("ImageButton")
+	button.Name = name
+	button.Size = size
+	button.Position = position
+	button.BackgroundColor3 = bgColor
+	button.BorderSizePixel = 0
+	button.AutoButtonColor = false
+	button.Parent = parent
+
+	-- Rounded Corners
+	local uiCorner = Instance.new("UICorner")
+	uiCorner.CornerRadius = UDim.new(0, 12)
+	uiCorner.Parent = button
+
+	-- Thick Stroke Outlines
+	local uiStroke = Instance.new("UIStroke")
+	uiStroke.Thickness = 3
+	uiStroke.Color = Color3.fromRGB(0, 0, 0)
+	uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	uiStroke.Parent = button
+
+	-- Smooth Hover & Click Animations
+	button.MouseEnter:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.15), {Size = size + UDim2.new(0, 4, 0, 4)}):Play()
+	end)
+	button.MouseLeave:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.15), {Size = size}):Play()
+	end)
+	button.MouseButton1Down:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.05), {ImageColor3 = Color3.fromRGB(200, 200, 200)}):Play()
+	end)
+	button.MouseButton1Up:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.05), {ImageColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+	end)
+
+	return button
+end
+
+local function addLabel(text, size, position, parent)
+	local label = Instance.new("TextLabel")
+	label.Size = size
+	label.Position = position
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.FredokaOne -- Matches iconic Roblox cartoony font styles
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextScaled = true
+	
+	-- Dark Text Border Outline
+	local textStroke = Instance.new("UIStroke")
+	textStroke.Thickness = 2.5
+	textStroke.Color = Color3.fromRGB(0, 0, 0)
+	textStroke.Parent = label
+	
+	label.Parent = parent
+	return label
+end
+
+---------------------------------------------------------
+-- LEFT-SIDE OVERLAY FRAME (Rebirth, Store, Troll)
+---------------------------------------------------------
+local leftContainer = Instance.new("Frame")
+leftContainer.Name = "LeftButtons"
+leftContainer.Size = UDim2.new(0, 100, 0, 320)
+leftContainer.Position = UDim2.new(0, 20, 0.5, -160)
+leftContainer.BackgroundTransparency = 1
+leftContainer.Parent = mainGui
+
+-- 1. Rebirth? Button
+local rebirthBtn = createButton("RebirthButton", UDim2.new(0, 80, 0, 80), UDim2.new(0, 10, 0, 0), Color3.fromRGB(34, 177, 76), leftContainer)
+rebirthBtn.Image = "rbxassetid://18367579979" 
+addLabel("Rebirth?", UDim2.new(1.2, 0, 0.3, 0), UDim2.new(-0.1, 0, 0.95, 0), rebirthBtn)
+
+-- 2. Store Button
+local storeBtn = createButton("StoreButton", UDim2.new(0, 80, 0, 80), UDim2.new(0, 10, 0, 105), Color3.fromRGB(0, 162, 232), leftContainer)
+storeBtn.Image = "rbxassetid://119008540789271" 
+addLabel("Store", UDim2.new(1.2, 0, 0.3, 0), UDim2.new(-0.1, 0, 0.95, 0), storeBtn)
+
+-- 3. Troll Button
+local trollBtn = createButton("TrollButton", UDim2.new(0, 80, 0, 80), UDim2.new(0, 10, 0, 210), Color3.fromRGB(240, 240, 240), leftContainer)
+trollBtn.Image = "rbxassetid://6862780938" 
+addLabel("Troll", UDim2.new(1.2, 0, 0.3, 0), UDim2.new(-0.1, 0, 0.95, 0), trollBtn)
+
+
+---------------------------------------------------------
+-- TOP-RIGHT OVERLAY FRAME (Spectate, Skip Stage)
+---------------------------------------------------------
+local topRightContainer = Instance.new("Frame")
+topRightContainer.Name = "TopRightButtons"
+topRightContainer.Size = UDim2.new(0, 340, 0, 60)
+topRightContainer.Position = UDim2.new(1, -360, 0, 20)
+topRightContainer.BackgroundTransparency = 1
+topRightContainer.Parent = mainGui
+
+-- 4. Spectate Button
+local spectateBtn = createButton("SpectateButton", UDim2.new(0, 150, 0, 50), UDim2.new(0, 0, 0, 0), Color3.fromRGB(0, 162, 232), topRightContainer)
+spectateBtn.Image = "rbxassetid://10842440150"
+local spectateLabel = addLabel("Spectate", UDim2.new(0.7, 0, 0.7, 0), UDim2.new(0.25, 0, 0.15, 0), spectateBtn)
+spectateLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- 5. Skip Stage Button
+local skipBtn = createButton("SkipStageButton", UDim2.new(0, 170, 0, 50), UDim2.new(0, 165, 0, 0), Color3.fromRGB(34, 177, 76), topRightContainer)
+skipBtn.Image = "rbxassetid://10842442431"
+local skipLabel = addLabel("Skip Stage", UDim2.new(0.7, 0, 0.7, 0), UDim2.new(0.25, 0, 0.15, 0), skipBtn)
+skipLabel.TextXAlignment = Enum.TextXAlignment.Left
