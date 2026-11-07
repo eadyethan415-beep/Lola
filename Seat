@@ -1,0 +1,34 @@
+-- 👇 PASTE YOUR ANIMATION ID NUMBER BETWEEN THE QUOTES BELOW 👇
+local MY_ANIMATION_ID = "1234567890" 
+
+local seat = script.Parent
+local currentTrack = nil
+
+-- This creates the animation object automatically using the ID you typed above
+local animation = Instance.new("Animation")
+animation.AnimationId = "rbxassetid://" .. string.gsub(MY_ANIMATION_ID, "%D", "")
+
+seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+	local humanoid = seat.Occupant
+	
+	if humanoid then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if animator then
+			-- Switch off default sitting stance so it doesn't conflict
+			local animateScript = humanoid.Parent:FindFirstChild("Animate")
+			if animateScript and animateScript:FindFirstChild("sit") then
+				animateScript.sit:FindFirstChildOfClass("Animation").AnimationId = animation.AnimationId
+			end
+			
+			-- Play your custom smooth pose
+			currentTrack = animator:LoadAnimation(animation)
+			currentTrack:Play()
+		end
+	else
+		-- The player stood up! Stop your custom pose smoothly
+		if currentTrack then
+			currentTrack:Stop()
+			currentTrack = nil
+		end
+	end
+end)
