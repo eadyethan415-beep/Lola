@@ -1,0 +1,38 @@
+-- 👇 PASTE YOUR ANIMATION ID NUMBER BETWEEN THE QUOTES BELOW 👇
+local MY_ANIMATION_ID = "1234567890" 
+local ANIMATION_SPEED = 0.5 
+
+local seat = script.Parent
+local currentTrack = nil
+
+local animation = Instance.new("Animation")
+animation.AnimationId = "rbxassetid://" .. string.gsub(MY_ANIMATION_ID, "%D", "")
+
+seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+	local humanoid = seat.Occupant
+	
+	if humanoid then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if animator then
+			-- 🛠️ FIX 1: Turn off the default animate script's sit feature entirely
+			local animateScript = humanoid.Parent:FindFirstChild("Animate")
+			if animateScript and animateScript:FindFirstChild("sit") then
+				animateScript.sit:FindFirstChildOfClass("Animation").AnimationId = animation.AnimationId
+			end
+			
+			currentTrack = animator:LoadAnimation(animation)
+			
+			-- 🛠️ FIX 2: Force the priority to Action4 so other clients cannot stop it
+			currentTrack.Priority = Enum.AnimationPriority.Action4
+			currentTrack.Looped = true          
+			
+			currentTrack:Play()
+			currentTrack:AdjustSpeed(ANIMATION_SPEED) 
+		end
+	else
+		if currentTrack then
+			currentTrack:Stop()
+			currentTrack = nil
+		end
+	end
+end)
