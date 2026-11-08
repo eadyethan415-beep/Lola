@@ -1,0 +1,49 @@
+-- 👇 PASTE YOUR ANIMATION ID NUMBER BETWEEN THE QUOTES BELOW 👇
+local MY_ANIMATION_ID = "1234567890" 
+local ANIMATION_SPEED = 0.5 
+
+local seat = script.Parent
+local currentTrack = nil
+local originalAnimateState = nil
+
+local animation = Instance.new("Animation")
+animation.AnimationId = "rbxassetid://" .. string.gsub(MY_ANIMATION_ID, "%D", "")
+
+seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+	local humanoid = seat.Occupant
+	
+	if humanoid then
+		local character = humanoid.Parent
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		
+		-- 🛠️ FIX: Turn off the player's default core animation script completely
+		local animateScript = character:FindFirstChild("Animate")
+		if animateScript and animateScript.Enabled == true then
+			animateScript.Enabled = false
+			originalAnimateState = animateScript
+		end
+		
+		if animator then
+			currentTrack = animator:LoadAnimation(animation)
+			
+			-- Force the highest priority tier possible
+			currentTrack.Priority = Enum.AnimationPriority.Action4
+			currentTrack.Looped = true          
+			
+			currentTrack:Play()
+			currentTrack:AdjustSpeed(ANIMATION_SPEED) 
+		end
+	else
+		-- The player stood up! Stop custom pose
+		if currentTrack then
+			currentTrack:Stop()
+			currentTrack = nil
+		end
+		
+		-- 🛠️ FIX: Safely turn the player's default walk/idle animations back on
+		if originalAnimateState then
+			originalAnimateState.Enabled = true
+			originalAnimateState = nil
+		end
+	end
+end)
